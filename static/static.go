@@ -10,7 +10,7 @@ const (
 
 	/* File names */
 
-	ConfigDirName        = "." + "gpt"
+	ConfigDirName        = "." + Name
 	HistoryFileName      = "history.jsonl"
 	OpenAiApiKeyFileName = "api.key"
 )
