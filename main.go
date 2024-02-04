@@ -37,7 +37,7 @@ var copy = &cli.Command{
 }
 
 func evalArgOrLoop(ctx *cli.Context) error {
-	repl, err := repl.NewREPL()
+	repl, err := repl.NewREPL(home.HistoryFile, home.OpenAiApiKey)
 	if err != nil {
 		return err
 	}
@@ -54,11 +54,11 @@ func storeApiKey(ctx *cli.Context) error {
 }
 
 func copyLastAnswer(ctx *cli.Context) error {
-	repl, err := repl.NewREPL()
+	history, err := repl.NewHistory(home.HistoryFile)
 	if err != nil {
 		return err
 	}
-	return repl.CopyLastAnswer()
+	return history.CopyLastAnswer()
 }
 
 func main() {

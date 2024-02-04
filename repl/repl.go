@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
-	"github.com/sharpvik/gpt/home"
 )
 
 type REPL struct {
@@ -19,12 +18,12 @@ type REPL struct {
 	gpt *openai.Client
 }
 
-func NewREPL() (*REPL, error) {
-	if home.OpenAiApiKey == "" {
+func NewREPL(historyFile *os.File, apiKey string) (*REPL, error) {
+	if apiKey == "" {
 		return nil, errors.New("supply an API key using `gpt key <OPENAI_API_KEY>`")
 	}
 
-	history, err := NewHistory(home.HistoryFile)
+	history, err := NewHistory(historyFile)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +33,7 @@ func NewREPL() (*REPL, error) {
 	return &REPL{
 		ReadWriter: bufio.NewReadWriter(stdin, stdout),
 		History:    history,
-		gpt:        openai.NewClient(home.OpenAiApiKey),
+		gpt:        openai.NewClient(apiKey),
 	}, nil
 }
 
