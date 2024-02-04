@@ -9,7 +9,7 @@ go install github.com/sharpvik/gpt
 ## Provide OpenAI API Key
 
 ```bash
-gpt key <YOUR_OPENAI_API_KEY>
+gpt key <OPENAI_API_KEY>
 ```
 
 ## Ask a Quick Question
@@ -34,3 +34,9 @@ As an artificial intelligence, I don't have feelings, but I'm here and ready to 
 
 1. Use `CTRL+D` (EOF) to finish query input and send it to ChatGPT.
 2. Use `CTRL+C` to leave the REPL environment.
+
+## Copy Last Response
+
+```bash
+gpt copy
+```

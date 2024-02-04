@@ -16,7 +16,7 @@ var app = &cli.App{
 	Version:  static.Version,
 	Authors:  []*cli.Author{static.Author},
 	Before:   home.Init,
-	Commands: []*cli.Command{key},
+	Commands: []*cli.Command{key, copy},
 	Action:   evalArgOrLoop,
 }
 
@@ -27,6 +27,13 @@ var key = &cli.Command{
 	Args:      true,
 	ArgsUsage: "<OPENAI_API_KEY>",
 	Action:    storeApiKey,
+}
+
+var copy = &cli.Command{
+	Name:    "copy",
+	Aliases: []string{"c"},
+	Usage:   "Copy last response",
+	Action:  copyLastAnswer,
 }
 
 func evalArgOrLoop(ctx *cli.Context) error {
@@ -44,6 +51,14 @@ func evalArgOrLoop(ctx *cli.Context) error {
 func storeApiKey(ctx *cli.Context) error {
 	key := ctx.Args().First()
 	return home.StoreApiKey(key)
+}
+
+func copyLastAnswer(ctx *cli.Context) error {
+	repl, err := repl.NewREPL()
+	if err != nil {
+		return err
+	}
+	return repl.CopyLastAnswer()
 }
 
 func main() {

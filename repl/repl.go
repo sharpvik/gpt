@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"strings"
 
 	"github.com/sashabaranov/go-openai"
 	"github.com/sharpvik/gpt/home"
@@ -13,6 +15,7 @@ import (
 
 type REPL struct {
 	*bufio.ReadWriter
+	*History
 	gpt *openai.Client
 }
 
@@ -20,21 +23,24 @@ func NewREPL() (*REPL, error) {
 	if home.OpenAiApiKey == "" {
 		return nil, errors.New("supply an API key using `gpt key <OPENAI_API_KEY>`")
 	}
+
+	history, err := NewHistory(home.HistoryFile)
+	if err != nil {
+		return nil, err
+	}
+
 	stdin := bufio.NewReader(os.Stdin)
 	stdout := bufio.NewWriter(os.Stdout)
 	return &REPL{
 		ReadWriter: bufio.NewReadWriter(stdin, stdout),
+		History:    history,
 		gpt:        openai.NewClient(home.OpenAiApiKey),
 	}, nil
 }
 
 func (repl *REPL) Read() (question string, err error) {
-	if _, err := repl.WriteString("\n👾\n"); err != nil {
-		return "", err
-	}
-	if err := repl.Flush(); err != nil {
-		return "", err
-	}
+	repl.WriteString("\n👾\n")
+	repl.Flush()
 	if question, err = repl.ReadString(0); err == io.EOF {
 		err = nil
 	}
@@ -56,7 +62,9 @@ func (repl *REPL) Eval(question string) (answer *openai.ChatCompletionStream, er
 	return repl.gpt.CreateChatCompletionStream(context.Background(), req)
 }
 
-func (repl *REPL) Print(answer *openai.ChatCompletionStream) error {
+func (repl *REPL) Print(answer *openai.ChatCompletionStream) (string, error) {
+	var buf strings.Builder
+
 	repl.WriteString("\n🤖\n")
 	for {
 		response, err := answer.Recv()
@@ -64,14 +72,16 @@ func (repl *REPL) Print(answer *openai.ChatCompletionStream) error {
 			break
 		}
 		if err != nil {
-			repl.WriteString("\n🚨 Stream error: " + err.Error() + "\n")
-			break
+			return buf.String(), fmt.Errorf("stream error: %s", err)
 		}
-		repl.WriteString(response.Choices[0].Delta.Content)
+		delta := response.Choices[0].Delta.Content
+		buf.WriteString(delta)
+		repl.WriteString(delta)
 		repl.Flush()
 	}
 	repl.WriteString("\n\n")
-	return repl.Flush()
+
+	return buf.String(), repl.Flush()
 }
 
 func (repl *REPL) Loop() error {
@@ -80,20 +90,18 @@ func (repl *REPL) Loop() error {
 		if err != nil {
 			return err
 		}
-		answer, err := repl.Eval(question)
-		if err != nil {
-			return err
-		}
-		if err := repl.Print(answer); err != nil {
+		if err := repl.EvalAndPrint(question); err != nil {
 			return err
 		}
 	}
 }
 
 func (repl *REPL) EvalAndPrint(question string) error {
-	answer, err := repl.Eval(question)
+	stream, err := repl.Eval(question)
 	if err != nil {
 		return err
 	}
-	return repl.Print(answer)
+	answer, err := repl.Print(stream)
+	repl.WriteEntry(&Entry{question, answer})
+	return err
 }
