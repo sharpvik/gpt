@@ -30,7 +30,10 @@ var key = &cli.Command{
 }
 
 func evalArgOrLoop(ctx *cli.Context) error {
-	repl := repl.NewREPL()
+	repl, err := repl.NewREPL()
+	if err != nil {
+		return err
+	}
 	if ctx.Args().Present() {
 		question := ctx.Args().First()
 		return repl.EvalAndPrint(question)

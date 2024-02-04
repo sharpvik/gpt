@@ -18,8 +18,8 @@ var (
 	historyFilePath string //? ~/.gpt/history.jsonl
 	historyFile     *os.File
 
-	apiKeyFilePath string //? ~/.gpt/api.key
-	ApiKey         string
+	openAiApiKeyFilePath string //? ~/.gpt/api.key
+	OpenAiApiKey         string
 )
 
 func Init(_ *cli.Context) (err error) {
@@ -42,14 +42,14 @@ func Init(_ *cli.Context) (err error) {
 		return fmt.Errorf("failed to open the history file: %s", err)
 	}
 
-	apiKeyFilePath = path.Join(configDir, static.OpenAiApiKeyFileName)
-	ApiKey = ReadApiKey()
+	openAiApiKeyFilePath = path.Join(configDir, static.OpenAiApiKeyFileName)
+	OpenAiApiKey = ReadApiKey()
 
 	return nil
 }
 
 func ReadApiKey() string {
-	file, err := os.Open(apiKeyFilePath)
+	file, err := os.Open(openAiApiKeyFilePath)
 	if err != nil {
 		return ""
 	}
@@ -61,7 +61,7 @@ func ReadApiKey() string {
 }
 
 func StoreApiKey(key string) error {
-	file, err := os.Create(apiKeyFilePath)
+	file, err := os.Create(openAiApiKeyFilePath)
 	if err != nil {
 		return fmt.Errorf("failed to create API key file: %s", err)
 	}
