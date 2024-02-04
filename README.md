@@ -1,5 +1,7 @@
 # `gpt` - ChatGPT 4 In Your Terminal
 
+https://github.com/sharpvik/gpt/assets/23066595/8360b5c8-7e7d-4251-9cf2-9a770d807739
+
 ## Install
 
 ```bash
