@@ -1,12 +1,16 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"os"
 
+	tea "github.com/charmbracelet/bubbletea"
+	"github.com/sharpvik/gpt/eval"
 	"github.com/sharpvik/gpt/home"
-	"github.com/sharpvik/gpt/repl"
+	"github.com/sharpvik/gpt/llm"
 	"github.com/sharpvik/gpt/static"
+	"github.com/sharpvik/gpt/ui"
 	"github.com/urfave/cli/v2"
 )
 
@@ -16,8 +20,8 @@ var app = &cli.App{
 	Version:  static.Version,
 	Authors:  []*cli.Author{static.Author},
 	Before:   home.Init,
-	Commands: []*cli.Command{key, copy},
-	Action:   evalArgOrLoop,
+	Commands: []*cli.Command{key, repl, copy},
+	Action:   quickAnswer,
 }
 
 var key = &cli.Command{
@@ -29,6 +33,14 @@ var key = &cli.Command{
 	Action:    storeApiKey,
 }
 
+var repl = &cli.Command{
+	Name:    "repl",
+	Aliases: []string{"r"},
+	Usage:   "Boot up the REPL",
+	Before:  checkApiKey,
+	Action:  REPL,
+}
+
 var copy = &cli.Command{
 	Name:    "copy",
 	Aliases: []string{"c"},
@@ -36,16 +48,37 @@ var copy = &cli.Command{
 	Action:  copyLastAnswer,
 }
 
-func evalArgOrLoop(ctx *cli.Context) error {
-	repl, err := repl.NewREPL(home.HistoryFile, home.OpenAiApiKey)
+func checkApiKey(_ *cli.Context) error {
+	if home.OpenAiApiKey == "" {
+		return errors.New("supply an API key using `gpt key <OPENAI_API_KEY>`")
+	}
+	return nil
+}
+
+func quickAnswer(ctx *cli.Context) error {
+	if err := checkApiKey(ctx); err != nil {
+		return err
+	}
+
+	if !ctx.Args().Present() {
+		return cli.ShowAppHelp(ctx)
+	}
+
+	repl, err := eval.NewREPL(home.HistoryFile, llm.NewGPT4(home.OpenAiApiKey))
 	if err != nil {
 		return err
 	}
-	if ctx.Args().Present() {
-		question := ctx.Args().First()
-		return repl.EvalAndPrint(question)
-	}
-	return repl.Loop()
+	question := ctx.Args().First()
+	return repl.EvalAndPrint(question)
+}
+
+func REPL(ctx *cli.Context) error {
+	_, err := tea.NewProgram(
+		ui.New(llm.NewGPT4(home.OpenAiApiKey)),
+		tea.WithAltScreen(),
+		tea.WithMouseAllMotion(),
+	).Run()
+	return err
 }
 
 func storeApiKey(ctx *cli.Context) error {
@@ -54,7 +87,7 @@ func storeApiKey(ctx *cli.Context) error {
 }
 
 func copyLastAnswer(ctx *cli.Context) error {
-	history, err := repl.NewHistory(home.HistoryFile)
+	history, err := eval.NewHistory(home.HistoryFile)
 	if err != nil {
 		return err
 	}
@@ -63,11 +96,7 @@ func copyLastAnswer(ctx *cli.Context) error {
 
 func main() {
 	if err := app.Run(os.Args); err != nil {
-		abort(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
-}
-
-func abort(args ...any) {
-	fmt.Println(args...)
-	os.Exit(1)
 }
