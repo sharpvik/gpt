@@ -1,8 +1,7 @@
-package repl
+package eval
 
 import (
 	"bufio"
-	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -10,35 +9,31 @@ import (
 	"strings"
 
 	"github.com/sashabaranov/go-openai"
+	"github.com/sharpvik/gpt/llm"
 )
 
 type REPL struct {
 	*bufio.ReadWriter
 	*History
-	gpt *openai.Client
+	gpt4 *llm.GPT4
 }
 
-func NewREPL(historyFile *os.File, apiKey string) (*REPL, error) {
-	if apiKey == "" {
-		return nil, errors.New("supply an API key using `gpt key <OPENAI_API_KEY>`")
-	}
-
+func NewREPL(historyFile *os.File, gpt4 *llm.GPT4) (*REPL, error) {
 	history, err := NewHistory(historyFile)
 	if err != nil {
 		return nil, err
 	}
-
 	stdin := bufio.NewReader(os.Stdin)
 	stdout := bufio.NewWriter(os.Stdout)
 	return &REPL{
 		ReadWriter: bufio.NewReadWriter(stdin, stdout),
 		History:    history,
-		gpt:        openai.NewClient(apiKey),
+		gpt4:       gpt4,
 	}, nil
 }
 
 func (repl *REPL) Read() (question string, err error) {
-	repl.WriteString("\n👾\n")
+	repl.WriteString("\n👾 ")
 	repl.Flush()
 	if question, err = repl.ReadString(0); err == io.EOF {
 		err = nil
@@ -46,25 +41,10 @@ func (repl *REPL) Read() (question string, err error) {
 	return question, err
 }
 
-func (repl *REPL) Eval(question string) (answer *openai.ChatCompletionStream, err error) {
-	req := openai.ChatCompletionRequest{
-		Model:       openai.GPT4,
-		Temperature: 0.8,
-		N:           1,
-		Messages: []openai.ChatCompletionMessage{
-			{
-				Role:    openai.ChatMessageRoleUser,
-				Content: question,
-			},
-		},
-	}
-	return repl.gpt.CreateChatCompletionStream(context.Background(), req)
-}
-
 func (repl *REPL) Print(answer *openai.ChatCompletionStream) (string, error) {
 	var buf strings.Builder
 
-	repl.WriteString("\n🤖\n")
+	repl.WriteString("\n🤖 ")
 	for {
 		response, err := answer.Recv()
 		if errors.Is(err, io.EOF) {
@@ -96,7 +76,7 @@ func (repl *REPL) Loop() error {
 }
 
 func (repl *REPL) EvalAndPrint(question string) error {
-	stream, err := repl.Eval(question)
+	stream, err := repl.gpt4.Stream(question)
 	if err != nil {
 		return err
 	}
