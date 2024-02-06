@@ -5,7 +5,7 @@ import (
 	"github.com/sashabaranov/go-openai"
 )
 
-type gptResponse struct {
+type gptMsg struct {
 	answer openai.ChatCompletionResponse
 	err    error
 }
@@ -13,7 +13,7 @@ type gptResponse struct {
 func (m Model) askChatGPT(question string) tea.Cmd {
 	return func() tea.Msg {
 		answer, err := m.gpt4.Ask(question)
-		return gptResponse{
+		return gptMsg{
 			answer: answer,
 			err:    err,
 		}
