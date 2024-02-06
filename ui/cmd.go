@@ -2,6 +2,8 @@ package ui
 
 import (
 	_ "embed"
+	"io"
+	"net/http"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/sashabaranov/go-openai"
@@ -27,12 +29,24 @@ func (m Model) askChatGPT(question string) tea.Cmd {
 
 func (m Model) mockAskChatGPT(question string) tea.Cmd {
 	return func() tea.Msg {
+		resp, err := http.DefaultClient.Get("https://www.google.com")
+		if err != nil {
+			return gptMsg{
+				err: err,
+			}
+		}
+		content, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return gptMsg{
+				err: err,
+			}
+		}
 		return gptMsg{
 			answer: openai.ChatCompletionResponse{
 				Choices: []openai.ChatCompletionChoice{
 					{
 						Message: openai.ChatCompletionMessage{
-							Content: string(mockContent),
+							Content: string(content),
 						},
 					},
 				},

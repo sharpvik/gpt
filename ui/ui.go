@@ -92,7 +92,7 @@ func (m Model) updateWithKeyMsg(msg tea.KeyMsg) (Model, tea.Cmd) {
 		question := m.input.Value()
 		m.input.SetValue("")
 		m = m.updateChatHistory(humanMessage(question))
-		return m, m.askChatGPT(question)
+		return m, m.mockAskChatGPT(question)
 	}
 	return m, nil
 }
