@@ -64,7 +64,12 @@ func quickAnswer(ctx *cli.Context) error {
 		return cli.ShowAppHelp(ctx)
 	}
 
-	repl, err := eval.NewREPL(home.HistoryFile, llm.NewGPT4(home.OpenAiApiKey))
+	history, err := eval.NewHistory(home.HistoryFile)
+	if err != nil {
+		return err
+	}
+
+	repl, err := eval.NewREPL(history, llm.NewGPT4(home.OpenAiApiKey))
 	if err != nil {
 		return err
 	}
@@ -73,8 +78,13 @@ func quickAnswer(ctx *cli.Context) error {
 }
 
 func REPL(ctx *cli.Context) error {
-	_, err := tea.NewProgram(
-		ui.New(llm.NewGPT4(home.OpenAiApiKey)),
+	history, err := eval.NewHistory(home.HistoryFile)
+	if err != nil {
+		return err
+	}
+
+	_, err = tea.NewProgram(
+		ui.New(llm.NewGPT4(home.OpenAiApiKey), history),
 		tea.WithAltScreen(),
 		tea.WithMouseAllMotion(),
 	).Run()

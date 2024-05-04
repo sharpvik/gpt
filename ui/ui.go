@@ -5,6 +5,8 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/charmbracelet/log"
+	"github.com/sharpvik/gpt/eval"
 	"github.com/sharpvik/gpt/llm"
 )
 
@@ -15,31 +17,35 @@ type Model struct {
 	focus bool
 	input textinput.Model
 
-	history string
-	chat    viewport.Model
+	chatHistory string
+	chat        viewport.Model
 
-	gpt4 *llm.GPT4
+	gpt4         *llm.GPT4
+	history      *eval.History
+	historyEntry *eval.Entry
 }
 
-func New(gpt4 *llm.GPT4) *Model {
+func New(gpt4 *llm.GPT4, history *eval.History) *Model {
 	focus := true
 	input := textinput.New()
 	input.Placeholder = "Enter your question here"
 	input.Focus()
 
-	history := aiMessage("Hey there! How can I help you today?")
+	localHistory := aiMessage("Hey there! How can I help you today?")
 	chat := viewport.New(80, 10)
 	chat.MouseWheelEnabled = true
-	chat.SetContent(history)
+	chat.SetContent(localHistory)
 
 	return &Model{
 		focus: focus,
 		input: input,
 
-		history: history,
-		chat:    chat,
+		chatHistory: localHistory,
+		chat:        chat,
 
-		gpt4: gpt4,
+		gpt4:         gpt4,
+		history:      history,
+		historyEntry: &eval.Entry{},
 	}
 }
 
@@ -72,7 +78,12 @@ func (m Model) updateWithGptMsg(msg gptMsg) Model {
 	if msg.err != nil {
 		return m.updateChatHistory(errorMessage(msg.err))
 	}
-	return m.updateChatHistory(aiMessage(msg.answer.Choices[0].Message.Content))
+	answer := msg.answer.Choices[0].Message.Content
+	m.historyEntry.Answer = answer
+	if err := m.history.WriteEntry(m.historyEntry); err != nil {
+		log.Errorf("Failed to save GPT response to history: %s", err)
+	}
+	return m.updateChatHistory(aiMessage(answer))
 }
 
 func (m Model) updateWithKeyMsg(msg tea.KeyMsg) (Model, tea.Cmd) {
@@ -91,6 +102,7 @@ func (m Model) updateWithKeyMsg(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "enter":
 		question := m.input.Value()
 		m.input.SetValue("")
+		m.historyEntry.Question = question
 		m = m.updateChatHistory(humanMessage(question))
 		return m, m.askChatGPT(question)
 	}
@@ -107,8 +119,10 @@ func (m Model) updateWithWindowSizeMsg(msg tea.WindowSizeMsg) Model {
 }
 
 func (m Model) updateChatHistory(message string) Model {
-	m.history += message
-	m.chat.SetContent(lipgloss.NewStyle().Width(m.chat.Width).Render(m.history))
+	m.chatHistory += message
+	m.chat.
+		SetContent(lipgloss.NewStyle().Width(m.chat.Width).
+			Render(m.chatHistory))
 	m.chat.GotoBottom()
 	return m
 }

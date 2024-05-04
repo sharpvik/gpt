@@ -18,11 +18,7 @@ type REPL struct {
 	gpt4 *llm.GPT4
 }
 
-func NewREPL(historyFile *os.File, gpt4 *llm.GPT4) (*REPL, error) {
-	history, err := NewHistory(historyFile)
-	if err != nil {
-		return nil, err
-	}
+func NewREPL(history *History, gpt4 *llm.GPT4) (*REPL, error) {
 	stdin := bufio.NewReader(os.Stdin)
 	stdout := bufio.NewWriter(os.Stdout)
 	return &REPL{
