@@ -14,28 +14,24 @@ go install github.com/sharpvik/gpt
 gpt key <OPENAI_API_KEY>
 ```
 
-## Ask a Quick Question
-
-```bash
-gpt "Tell me about football"
-```
-
 ## Boot Up the REPL
 
 ```bash
-gpt
+gpt repl
 ```
 
-```txt
-👾
-How are you?
-^D
-🤖
-As an artificial intelligence, I don't have feelings, but I'm here and ready to assist you!
-```
+![ui.png](./ui/ui.png)
 
-1. Use `CTRL+D` (EOF) to finish query input and send it to ChatGPT.
-2. Use `CTRL+C` to leave the REPL environment.
+1. Press `I` and start typing.
+2. Press `ENTER` to send the message.
+3. `ESC`ape from the input and press `C` to copy the last GPT answer.
+4. Use `CTRL+C` to leave the REPL environment.
+
+## Ask a Quick Question
+
+```bash
+gpt 'Tell me about football'
+```
 
 ## Copy Last Response
 
