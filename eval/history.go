@@ -66,6 +66,7 @@ func (h *History) readLastEntry(file *os.File) (*Entry, error) {
 }
 
 func (h *History) WriteEntry(entry *Entry) error {
+	h.Last = entry
 	return json.NewEncoder(h).Encode(entry)
 }
 

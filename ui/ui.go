@@ -5,7 +5,6 @@ import (
 	"github.com/charmbracelet/bubbles/viewport"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/charmbracelet/log"
 	"github.com/sharpvik/gpt/eval"
 	"github.com/sharpvik/gpt/llm"
 )
@@ -80,9 +79,7 @@ func (m Model) updateWithGptMsg(msg gptMsg) Model {
 	}
 	answer := msg.answer.Choices[0].Message.Content
 	m.historyEntry.Answer = answer
-	if err := m.history.WriteEntry(m.historyEntry); err != nil {
-		log.Errorf("Failed to save GPT response to history: %s", err)
-	}
+	m.history.WriteEntry(m.historyEntry)
 	return m.updateChatHistory(aiMessage(answer))
 }
 
@@ -98,6 +95,9 @@ func (m Model) updateWithKeyMsg(msg tea.KeyMsg) (Model, tea.Cmd) {
 	case "i":
 		m.focus = true
 		m.input.Focus()
+
+	case "c":
+		m.history.CopyLastAnswer()
 
 	case "enter":
 		question := m.input.Value()
