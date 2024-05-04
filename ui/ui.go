@@ -92,7 +92,7 @@ func (m Model) updateWithKeyMsg(msg tea.KeyMsg) (Model, tea.Cmd) {
 		question := m.input.Value()
 		m.input.SetValue("")
 		m = m.updateChatHistory(humanMessage(question))
-		return m, m.mockAskChatGPT(question)
+		return m, m.askChatGPT(question)
 	}
 	return m, nil
 }
@@ -108,7 +108,7 @@ func (m Model) updateWithWindowSizeMsg(msg tea.WindowSizeMsg) Model {
 
 func (m Model) updateChatHistory(message string) Model {
 	m.history += message
-	m.chat.SetContent(m.history)
+	m.chat.SetContent(lipgloss.NewStyle().Width(m.chat.Width).Render(m.history))
 	m.chat.GotoBottom()
 	return m
 }

@@ -6,7 +6,7 @@ const (
 	/* General information */
 
 	Name    = "gpt"
-	Version = "v0.2.1"
+	Version = "v0.2.2"
 
 	/* File names */
 
